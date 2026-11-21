@@ -156,6 +156,118 @@
         background: #cfe0ff;
         padding-left: 3.2cqw;
       }
+      .r.lift {
+        background: #b8d4ff;
+        box-shadow: 0 0.4cqw 0.8cqw #0004;
+        z-index: 2;
+        position: relative;
+      }
+      .r.slot {
+        background: #e8f0ff;
+        border: 1px dashed var(--h1);
+        min-height: 7.5cqw;
+      }
+      #listBar {
+        display: none;
+        flex: none;
+        gap: 1.2cqw;
+        padding: 0.8cqw 1.5cqw;
+        background: #e8eaef;
+        border-bottom: 1px solid #888;
+        flex-wrap: wrap;
+        align-items: center;
+      }
+      #listBar.show {
+        display: flex;
+      }
+      #listBar .bn {
+        flex: 1;
+        min-width: 22%;
+        height: 8.5cqw;
+        font-size: 3.6cqw;
+      }
+      #listBar .sp {
+        flex: 100%;
+        height: 0;
+      }
+      #ovl {
+        position: fixed;
+        inset: 0;
+        z-index: 50;
+        background: #0009;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        padding: 4cqw;
+      }
+      #ovl.show {
+        display: flex;
+      }
+      .sheet {
+        width: min(92vw, 420px);
+        background: linear-gradient(#fff, #d8dbe2);
+        border: 2px solid #000;
+        border-radius: 1.6cqw;
+        padding: 2.5cqw;
+        box-shadow: 0 1cqw 0 #666;
+        font-size: 4.6cqw;
+        max-height: 85vh;
+        overflow: auto;
+      }
+      .sheet h2 {
+        margin: 0 0 1.5cqw;
+        font-size: 5.2cqw;
+        font-weight: 400;
+        color: var(--h2);
+      }
+      .sheet p {
+        margin: 0 0 2cqw;
+        line-height: 1.35;
+        font-size: 4.2cqw;
+      }
+      .sheet input {
+        width: 100%;
+        font: inherit;
+        border: 1px solid #333;
+        border-radius: 1cqw;
+        padding: 1.2cqw 1.5cqw;
+        margin-bottom: 2cqw;
+        background: #fff;
+        user-select: text;
+        -webkit-user-select: text;
+        touch-action: manipulation;
+      }
+      #sheet,
+      #sheet * {
+        user-select: text;
+        -webkit-user-select: text;
+      }
+      #sheet .bn {
+        user-select: none;
+        -webkit-user-select: none;
+      }
+      .sheet .pick {
+        display: flex;
+        flex-direction: column;
+        gap: 1cqw;
+        max-height: 40vh;
+        overflow: auto;
+        margin-bottom: 1.5cqw;
+      }
+      .sheet .pick .bn {
+        justify-content: flex-start;
+        text-align: left;
+        height: 9cqw;
+        padding: 0 2cqw;
+      }
+      .sheet .acts {
+        display: flex;
+        gap: 1.5cqw;
+      }
+      .sheet .acts .bn {
+        flex: 1;
+        height: 10cqw;
+      }
       .r.pl {
         color: var(--h2);
         font-weight: bold;
@@ -658,6 +770,12 @@
           ><span id="fn">music</span>
         </div>
         <div id="tt"><span id="tm"></span></div>
+        <div id="listBar">
+          <button type="button" class="bn" id="lbRen">Rename</button>
+          <button type="button" class="bn" id="lbDel">Delete</button>
+          <button type="button" class="bn" id="lbMov">Move</button>
+          <button type="button" class="bn" id="lbNew">New folder</button>
+        </div>
         <div id="main">
           <div id="list"></div>
           <canvas id="cv"></canvas>
@@ -686,7 +804,8 @@
               ><button class="bn" id="bFont">Load<br />font</button>
               <button class="bn" id="bDel">Delete</button
               ><button class="bn" id="bMov">Move</button
-              ><button class="bn" id="bFav">Favourite<br />on/off</button>
+              ><button class="bn" id="bRen">Rename</button>
+              <button class="bn" id="bFav">Favourite<br />on/off</button>
             </div>
             <div class="note" id="info"></div>
           </div>
@@ -837,8 +956,9 @@
               <button class="bn" id="bPers">Keep<br />storage</button>
             </div>
             <div class="note">
-              Songs stay on this device. Playback keeps going with the screen
-              locked. Shuffle, Continue, and One are on the middle screen.
+              Visuals follow the music frequencies. Hold list rows to reorder.
+              Delete, rename, and folders use the blue sheets, not browser
+              pop-ups.
             </div>
           </div>
         </div>
@@ -852,6 +972,9 @@
       hidden
     />
     <input type="file" id="ff" accept=".ttf,.otf,.woff,.woff2" hidden />
+    <div id="ovl" aria-hidden="true">
+      <div class="sheet" id="sheet"></div>
+    </div>
     <script>
       const $ = (s) => document.querySelector(s),
         LS = localStorage,
@@ -919,6 +1042,119 @@
         Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
       const nm = (a, b) =>
         a.name.localeCompare(b.name, undefined, { numeric: true });
+      const byOrder = (a, b) =>
+        (a.order ?? 0) - (b.order ?? 0) || nm(a, b);
+      const band = (i, n, pow = 1.65) => {
+        if (!n || !fd.length) return 0;
+        const t = Math.max(0, Math.min(1, i / n));
+        const ix = Math.min(
+          Math.max(1, Math.floor(Math.pow(t, pow) * (fd.length - 2)) + 1),
+          fd.length - 1,
+        );
+        return fd[ix] / 255;
+      };
+      async function normalizeOrder() {
+        let ch = 0;
+        const fix = async (arr, store) => {
+          arr.sort(byOrder);
+          for (let i = 0; i < arr.length; i++) {
+            if (arr[i].order !== i) {
+              arr[i].order = i;
+              await put(store, arr[i]);
+              ch++;
+            }
+          }
+        };
+        const roots = F.slice();
+        if (roots.some((f) => f.order == null)) roots.sort(nm);
+        await fix(roots, "folders");
+        for (const f of F) {
+          const kids = T.filter((t) => t.folder == f.id);
+          if (kids.some((t) => t.order == null)) kids.sort(nm);
+          await fix(kids, "tracks");
+        }
+        const rootT = T.filter((t) => !t.folder);
+        if (rootT.some((t) => t.order == null)) rootT.sort(nm);
+        await fix(rootT, "tracks");
+        return ch;
+      }
+      function ovlClose() {
+        $("#ovl").classList.remove("show");
+        $("#sheet").innerHTML = "";
+      }
+      function ovlOpen(html) {
+        $("#sheet").innerHTML = html;
+        $("#ovl").classList.add("show");
+      }
+      function dlgConfirm(title, body, onYes) {
+        ovlOpen(
+          `<h2>${esc(title)}</h2><p>${esc(body)}</p><div class="acts"><button type="button" class="bn" id="dlgNo">Cancel</button><button type="button" class="bn hot" id="dlgYes">Delete</button></div>`,
+        );
+        $("#dlgNo").onclick = ovlClose;
+        $("#dlgYes").onclick = () => {
+          ovlClose();
+          onYes();
+        };
+      }
+      function dlgPrompt(title, label, value, onOk) {
+        const sheet = $("#sheet");
+        sheet.replaceChildren();
+        const h2 = document.createElement("h2");
+        h2.textContent = title;
+        const lab = document.createElement("label");
+        lab.textContent = label;
+        const inp = document.createElement("input");
+        inp.id = "dlgIn";
+        inp.maxLength = 64;
+        inp.value = value || "";
+        const acts = document.createElement("div");
+        acts.className = "acts";
+        const no = document.createElement("button");
+        no.type = "button";
+        no.className = "bn";
+        no.id = "dlgNo";
+        no.textContent = "Cancel";
+        const yes = document.createElement("button");
+        yes.type = "button";
+        yes.className = "bn hot";
+        yes.id = "dlgOk";
+        yes.textContent = "OK";
+        acts.append(no, yes);
+        sheet.append(h2, lab, inp, acts);
+        $("#ovl").classList.add("show");
+        const ok = () => {
+          const v = inp.value.trim();
+          if (!v) return toast("Enter a name");
+          ovlClose();
+          onOk(v);
+        };
+        no.onclick = ovlClose;
+        yes.onclick = ok;
+        inp.onkeydown = (e) => {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            ok();
+          }
+        };
+        requestAnimationFrame(() => {
+          inp.focus();
+          inp.select();
+        });
+      }
+      function dlgPick(title, onPick) {
+        const fs = F.slice().sort(byOrder);
+        ovlOpen(
+          `<h2>${esc(title)}</h2><div class="pick"><button type="button" class="bn" data-id="">No folder (root)</button>${fs.map((f) => `<button type="button" class="bn" data-id="${f.id}">${esc(f.name)}</button>`).join("")}</div><div class="acts"><button type="button" class="bn" id="dlgNo">Cancel</button></div>`,
+        );
+        $("#dlgNo").onclick = ovlClose;
+        $("#sheet").querySelectorAll(".pick .bn").forEach((b) => {
+          b.onclick = () => {
+            const id = b.dataset.id || null;
+            ovlClose();
+            onPick(id);
+          };
+        });
+      }
       /* ---------- helpers ---------- */
       const fmt = (s) => {
         s = Math.floor(s || 0);
@@ -955,18 +1191,30 @@
       function items() {
         if (favV)
           return T.filter((t) => t.fav)
-            .sort(nm)
+            .sort(byOrder)
             .map((t) => ({ k: "t", ...t }));
         return [
           ...(cwd
             ? []
             : F.slice()
-                .sort(nm)
+                .sort(byOrder)
                 .map((f) => ({ k: "f", ...f }))),
           ...T.filter((t) => t.folder == cwd)
-            .sort(nm)
+            .sort(byOrder)
             .map((t) => ({ k: "t", ...t })),
         ];
+      }
+      function listBar() {
+        const bar = $("#listBar");
+        const show =
+          top_.classList.contains("list") && (sel || (!cwd && !favV));
+        bar.classList.toggle("show", !!show);
+        if (!show) return;
+        $("#lbRen").style.display = sel ? "" : "none";
+        $("#lbDel").style.display = sel ? "" : "none";
+        $("#lbMov").style.display =
+          sel && T.find((t) => t.id == sel) && !favV ? "" : "none";
+        $("#lbNew").style.display = cwd || favV ? "none" : "";
       }
       function render() {
         $("#fn").textContent = favV
@@ -983,22 +1231,23 @@
                   `<div class="r${i.id == sel ? " on" : ""}${i.id == cur ? " pl" : ""}" data-id="${i.id}" data-k="${i.k}">${i.k == "f" ? ICF : ICN}<span>${esc(i.name)}</span>${i.fav ? "<b>★</b>" : ""}</div>`,
               )
               .join("")
-          : '<div class="empty">No sounds here yet.<br>Tap L, then Import sounds.</div>';
+          : '<div class="empty">No sounds here yet.<br>Tap L to import or make a folder.<br>Hold a row to drag and sort.</div>';
         $("#info").textContent = `${T.length} sounds, ${F.length} folders`;
         est();
         deck();
+        listBar();
       }
       const esc = (s) =>
         s.replace(
           /[&<>"]/g,
           (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c],
         );
-      $("#list").onclick = (e) => {
-        const r = e.target.closest(".r");
-        if (!r) return;
-        const id = r.dataset.id;
+      let listDrag = 0,
+        listHold,
+        listPtr;
+      function listTap(id, k) {
         if (sel == id) {
-          if (r.dataset.k == "f") {
+          if (k == "f") {
             cwd = id;
             sel = null;
             render();
@@ -1007,7 +1256,201 @@
           sel = id;
           render();
         }
-      };
+      }
+      async function reorderList(fromId, fromK, toId, before) {
+        if (fromId == toId) return;
+        const toK = F.find((x) => x.id == toId) ? "f" : "t";
+        if (fromK != toK) return toast("Keep folders above songs");
+        let pool = favV
+          ? T.filter((t) => t.fav).sort(byOrder)
+          : fromK == "f"
+            ? F.slice().sort(byOrder)
+            : T.filter((t) => t.folder == cwd).sort(byOrder);
+        const fi = pool.findIndex((x) => x.id == fromId);
+        const ti = pool.findIndex((x) => x.id == toId);
+        if (fi < 0 || ti < 0) return;
+        const [m] = pool.splice(fi, 1);
+        let ins = ti;
+        if (fi < ti) ins--;
+        if (!before) ins++;
+        pool.splice(ins, 0, m);
+        const store = fromK == "f" ? "folders" : "tracks";
+        for (let i = 0; i < pool.length; i++) {
+          pool[i].order = i;
+          await put(store, pool[i]);
+        }
+        F = await all("folders");
+        T = await all("tracks");
+        render();
+        toast("Order saved");
+      }
+      async function deleteSel() {
+        if (!sel) return toast("Select something first");
+        const f = F.find((x) => x.id == sel),
+          t = T.find((x) => x.id == sel);
+        if (!f && !t) return;
+        const body = f
+          ? `Delete folder "${f.name}" and every song inside it?`
+          : `Delete "${t.name}"?`;
+        dlgConfirm("Delete", body, async () => {
+          const ids = f
+            ? T.filter((x) => x.folder == f.id).map((x) => x.id)
+            : [sel];
+          for (const i of ids) {
+            await del("tracks", i);
+            await del("blobs", i);
+            if (i == cur) {
+              alive = false;
+              hold = true;
+              a.pause();
+              a.removeAttribute("src");
+              cur = null;
+              document.title = "DSi Sound";
+              $("#tm").textContent = "";
+            }
+          }
+          if (f) await del("folders", f.id);
+          sel = null;
+          T = await all("tracks");
+          F = await all("folders");
+          await normalizeOrder();
+          render();
+          toast("Deleted");
+        });
+      }
+      async function renameSel() {
+        if (!sel) return toast("Select something first");
+        const f = F.find((x) => x.id == sel),
+          t = T.find((x) => x.id == sel);
+        if (!f && !t) return;
+        const id = sel;
+        dlgPrompt("Rename", "Name", (f || t).name, async (name) => {
+          const fo = F.find((x) => x.id == id);
+          const tr = T.find((x) => x.id == id);
+          try {
+            if (fo) {
+              await put("folders", { ...fo, name });
+              F = await all("folders");
+            } else if (tr) {
+              await put("tracks", { ...tr, name });
+              T = await all("tracks");
+              if (cur == id) {
+                title(name);
+                document.title = name + " · DSi Sound";
+                session({ ...tr, name });
+              }
+            } else return toast("Item missing");
+            render();
+            toast("Renamed");
+          } catch (_) {
+            toast("Could not save name");
+          }
+        });
+      }
+      async function moveSel() {
+        const t = T.find((x) => x.id == sel);
+        if (!t) return toast("Select a song first");
+        dlgPick("Move to folder", async (folder) => {
+          t.folder = folder;
+          const kids = T.filter((x) => x.folder == folder).sort(byOrder);
+          t.order = kids.length;
+          await put("tracks", t);
+          T = await all("tracks");
+          render();
+          toast("Moved");
+        });
+      }
+      async function newFolder(name) {
+        const n = name?.trim();
+        if (!n) return;
+        const order = F.length;
+        await put("folders", { id: uid(), name: n, order });
+        F = await all("folders");
+        render();
+        toast("Folder created");
+      }
+      $("#list").addEventListener("pointerdown", (e) => {
+        const r = e.target.closest(".r");
+        if (!r || !$("#list").contains(r)) return;
+        listPtr = e.pointerId;
+        listDrag = 0;
+        clearTimeout(listHold);
+        const id = r.dataset.id;
+        const sy = e.clientY;
+        listHold = setTimeout(() => {
+          listDrag = 1;
+          r.classList.add("lift");
+          r.setPointerCapture(listPtr);
+        }, 360);
+        const onMove = (ev) => {
+          if (ev.pointerId != listPtr) return;
+          if (!listDrag) {
+            if (Math.abs(ev.clientY - sy) > 14) clearTimeout(listHold);
+            return;
+          }
+          ev.preventDefault();
+          const rows = [...$("#list").querySelectorAll(".r:not(.slot)")];
+          const slot = $("#list").querySelector(".r.slot");
+          let over = null;
+          for (const row of rows) {
+            if (row.dataset.id == id) continue;
+            const box = row.getBoundingClientRect();
+            if (ev.clientY < box.top + box.height / 2) {
+              over = row;
+              break;
+            }
+          }
+          if (over) {
+            if (!slot) {
+              const ph = document.createElement("div");
+              ph.className = "r slot";
+              $("#list").insertBefore(ph, over);
+            } else $("#list").insertBefore(slot, over);
+          } else if (rows.length) {
+            const last = rows[rows.length - 1];
+            if (!slot) {
+              const ph = document.createElement("div");
+              ph.className = "r slot";
+              $("#list").appendChild(ph);
+            } else last.after(slot);
+          }
+        };
+        const onUp = (ev) => {
+          if (ev.pointerId != listPtr) return;
+          clearTimeout(listHold);
+          document.removeEventListener("pointermove", onMove);
+          document.removeEventListener("pointerup", onUp);
+          document.removeEventListener("pointercancel", onUp);
+          const slot = $("#list").querySelector(".r.slot");
+          if (listDrag) {
+            r.classList.remove("lift");
+            let toId = null,
+              before = true;
+            if (slot && slot.nextElementSibling?.classList.contains("r")) {
+              toId = slot.nextElementSibling.dataset.id;
+              before = true;
+            } else if (slot?.previousElementSibling?.classList.contains("r")) {
+              toId = slot.previousElementSibling.dataset.id;
+              before = false;
+            }
+            slot?.remove();
+            if (toId) reorderList(id, r.dataset.k, toId, before);
+            listDrag = 0;
+            return;
+          }
+          if (Math.abs(ev.clientY - sy) < 14 && ev.timeStamp - e.timeStamp < 500)
+            listTap(id, r.dataset.k);
+          listDrag = 0;
+        };
+        document.addEventListener("pointermove", onMove);
+        document.addEventListener("pointerup", onUp);
+        document.addEventListener("pointercancel", onUp);
+      });
+      $("#lbDel").onclick = deleteSel;
+      $("#lbRen").onclick = renameSel;
+      $("#lbMov").onclick = moveSel;
+      $("#lbNew").onclick = () =>
+        dlgPrompt("New folder", "Folder name", "", newFolder);
       async function est() {
         try {
           const e = await navigator.storage.estimate();
@@ -1035,6 +1478,8 @@
         raf = 0,
         posAt = 0,
         graphTried = false,
+        vizTap = null,
+        vizSilent = null,
         resumeN = 0,
         primed = null,
         primeToken = 0;
@@ -1152,34 +1597,76 @@
           if (d && typeof d.seekTime == "number") a.currentTime = d.seekTime;
         });
       }
-      function ensureGraph() {
-        if (an || graphTried) return;
+      function hookEcho() {
+        if (!ctx || !wet) return;
+        wet.gain.value = echo ? 0.5 : 0;
+      }
+      function ensureGraph(force) {
+        if (an) return;
+        if (force) graphTried = false;
+        if (graphTried) return;
         graphTried = true;
-        const cap = a.captureStream || a.mozCaptureStream;
         const AC = window.AudioContext || window.webkitAudioContext;
-        if (!cap || !AC) return;
+        if (!AC) return;
+        const cap = a.captureStream || a.mozCaptureStream;
+        if (cap && a.src) {
+          try {
+            ctx = ctx || new AC();
+            an = ctx.createAnalyser();
+            an.fftSize = 1024;
+            an.smoothingTimeConstant = 0.55;
+            dl = ctx.createDelay(1);
+            dl.delayTime.value = 0.24;
+            fb = ctx.createGain();
+            fb.gain.value = 0.4;
+            wet = ctx.createGain();
+            wet.gain.value = echo ? 0.5 : 0;
+            vizSilent = ctx.createGain();
+            vizSilent.gain.value = 0;
+            const src = ctx.createMediaStreamSource(cap.call(a));
+            src.connect(an);
+            an.connect(vizSilent);
+            vizSilent.connect(ctx.destination);
+            src.connect(dl);
+            dl.connect(fb);
+            fb.connect(dl);
+            dl.connect(wet);
+            wet.connect(ctx.destination);
+            return;
+          } catch (_) {
+            an = null;
+          }
+        }
+        if (document.hidden) return;
         try {
-          ctx = new AC();
+          ctx = ctx || new AC();
+          if (!vizTap) vizTap = ctx.createMediaElementSource(a);
           an = ctx.createAnalyser();
           an.fftSize = 1024;
-          an.smoothingTimeConstant = 0.6;
+          an.smoothingTimeConstant = 0.55;
           dl = ctx.createDelay(1);
           dl.delayTime.value = 0.24;
           fb = ctx.createGain();
           fb.gain.value = 0.4;
           wet = ctx.createGain();
           wet.gain.value = echo ? 0.5 : 0;
-          const src = ctx.createMediaStreamSource(cap.call(a));
-          src.connect(an);
-          src.connect(dl);
+          vizTap.connect(an);
+          vizTap.connect(dl);
           dl.connect(fb);
           fb.connect(dl);
           dl.connect(wet);
+          an.connect(ctx.destination);
           wet.connect(ctx.destination);
         } catch (_) {
-          ctx = null;
           an = null;
+          graphTried = false;
         }
+      }
+      function retryAnalyser() {
+        if (an) return;
+        graphTried = false;
+        ensureGraph(true);
+        if (ctx && ctx.state == "suspended") ctx.resume();
       }
       function dropPrime() {
         if (primed && primed.url && primed.url !== url)
@@ -1233,6 +1720,10 @@
         try {
           await a.play();
         } catch (_) {}
+        graphTried = false;
+        ensureGraph(true);
+        if (ctx && ctx.state == "suspended") ctx.resume();
+        setTimeout(retryAnalyser, 120);
         render();
         session(m);
         primeNext();
@@ -1250,7 +1741,7 @@
           favV
             ? T.filter((t) => t.fav)
             : T.filter((t) => t.folder == (m ? m.folder : cwd))
-        ).sort(nm);
+        ).sort(byOrder);
       }
       function stopEnd() {
         alive = false;
@@ -1315,8 +1806,9 @@
         resumeN = 0;
         $("#ic").innerHTML = PAUSE;
         $("#np").classList.add("playing");
-        ensureGraph();
+        ensureGraph(true);
         if (ctx && ctx.state == "suspended") ctx.resume();
+        setTimeout(retryAnalyser, 120);
         session();
         if (!raf) loop();
       };
@@ -1399,7 +1891,10 @@
         fd = new Uint8Array(512);
       function loop() {
         upd();
-        if (top_.classList.contains("play") && !document.hidden) draw();
+        if (top_.classList.contains("play") && !document.hidden) {
+          if (!an && a.src && !a.paused) retryAnalyser();
+          draw();
+        }
         if (!a.paused && !document.hidden) raf = requestAnimationFrame(loop);
         else raf = 0;
       }
@@ -1472,18 +1967,23 @@
         S.t += (t - S.t) * 0.4;
         S.v += (v - S.v) * 0.3;
         S.f++;
-        S.x += 0.4 + S.v * 5;
+        S.x += 0.08 + S.b * 2.4 + S.m * 0.9 + S.v * 2.2;
         const n = performance.now();
+        const live = b + m + t > 0.006;
         S.hit = 0;
-        if (b > S.avg * 1.25 + 0.05 && n - S.lb > 180) {
+        if (
+          live &&
+          b > S.avg * 1.22 + 0.04 &&
+          n - S.lb > 170
+        ) {
           S.beat = 1;
           S.hit = 1;
           S.lb = n;
         } else S.beat *= 0.88;
         S.avg += (b - S.avg) * 0.05;
-        if (S.hit && S.jy == 0) S.vy = 2.6;
+        if (live && S.hit && S.jy == 0) S.vy = 1.4 + S.b * 4;
         S.jy += S.vy;
-        S.vy -= 0.3;
+        S.vy -= 0.28;
         if (S.jy <= 0) {
           S.jy = 0;
           S.vy = 0;
@@ -1507,6 +2007,7 @@
         } else {
           td.fill(128);
           fd.fill(0);
+          if (a.src && !a.paused) ensureGraph(true);
         }
         feat();
         VZ[vis](H / u);
@@ -1561,9 +2062,13 @@
           R(0, gy + 5, 128, 1, "#000");
           R(0, gy, 128, 1, "#fcbcb0");
           for (let i = 0; i < 7; i++) {
+            const e = band(i, 7);
             const x = wrap(i * 22 - S.x * 1.6, 154, 12),
-              y = GH * 0.4 + ((td[i * 60] - 128) / 128) * GH * 0.3,
-              w = Math.abs(Math.cos(S.f * 0.15 + i)) * 3 + 1;
+              y =
+                GH * 0.4 +
+                (1 - e) * GH * 0.22 +
+                ((td[i * 14] - 128) / 128) * GH * 0.08,
+              w = 1 + e * 4;
             R(x, y, w, 6, "#f8b800");
             R(x, y, w, 1, "#fff");
           }
@@ -1580,13 +2085,11 @@
           for (let y = 0; y < GH; y += 12) R(0, y, 128, 6, "#ffd978");
           R(0, GH - 10, 128, 10, "#c88a3c");
           for (let i = 0; i < 6; i++) {
+            const e = band(i, 6, 1.1);
             const x = 8 + i * 20,
-              y =
-                GH -
-                26 -
-                Math.abs(Math.sin(S.f * 0.12 + i * 0.9)) * (3 + S.m * 40),
-              c = `hsl(${i * 58 + 10},80%,55%)`,
-              a = S.beat > 0.4 ? 0 : 5;
+              y = GH - 26 - e * GH * 0.34,
+              c = `hsl(${i * 58 + 10 + e * 30},80%,${45 + e * 20}%)`,
+              a = S.beat > 0.45 ? 0 : 2 + e * 10;
             R(x, y, 12, 12, c);
             R(x + 2, y + 3, 3, 3, "#fff");
             R(x + 8, y + 3, 3, 3, "#fff");
@@ -1605,16 +2108,19 @@
           for (let y = -8; y < GH + 8; y += 8)
             for (let x = -8; x < 136; x += 8) {
               const o = ((y / 8) & 1) * 4 + (S.x % 8),
-                s = 3 + S.v * 5;
+                s =
+                  2 +
+                  band((((x / 8) + (y / 8) + 16) % 16 + 16) % 16, 16) * 6;
               g.fillRect(Math.round(x + o), y, s, s);
             }
           g.strokeStyle = "#000";
           g.lineCap = "round";
           for (let i = 0; i < 3; i++) {
+            const e = band(i + 2, 5, 1.2);
             const cx = 26 + i * 38,
-              ph = S.f * 0.15 + i * 1.3,
-              sw = Math.sin(ph) * 3,
-              k = 6 + S.m * 30;
+              ph = S.m * 10 + i * 1.3,
+              sw = Math.sin(ph) * (2 + e * 5),
+              k = 4 + e * 34;
             R(cx + sw - 3, GH - 46, 6, 6, "#000");
             R(cx + sw * 0.6 - 4, GH - 40, 8, 16, "#000");
             R(cx - 4, GH - 24, 3, 24, "#000");
@@ -1631,8 +2137,8 @@
         (GH) => {
           R(0, 0, 128, GH, "#7ec8ff");
           for (let x = 0; x < 128; x += 2) {
-            const q = x + S.x * 0.4,
-              h = 12 + Math.sin(q * 0.07) * 6 + Math.sin(q * 0.19) * 3;
+            const e = band(x >> 1, 64, 1.2);
+            const h = 4 + e * 26 + S.b * 6;
             R(x, GH - 18 - h, 2, h, "#3a9a50");
           }
           R(0, GH - 18, 128, 18, "#b5651d");
@@ -1674,13 +2180,14 @@
           R(0, 0, 128, GH, "#04051a");
           g.lineWidth = 0.7;
           for (let i = 0; i < 9; i++) {
-            const n = 3 + (i % 4),
-              cx = 64 + Math.sin(S.f * 0.01 * (1 + i * 0.3) + i) * 50,
+            const e = band(i, 9);
+            const n = 3 + Math.floor(e * 4),
+              cx = 64 + Math.sin(i * 1.7 + S.m * 6) * (16 + e * 46),
               cy =
                 GH / 2 +
-                Math.cos(S.f * 0.013 * (1 + i * 0.2) + i * 2) * GH * 0.35,
-              r = 5 + i * 1.5 + S.b * 14,
-              ro = S.f * (0.01 + i * 0.004) * (i % 2 ? 1 : -1);
+                Math.cos(i * 2.1 + S.t * 5) * (GH * 0.14 + e * GH * 0.24),
+              r = 4 + i * 1.3 + e * 18 + S.b * 8,
+              ro = S.m * 9 + e * 3 + (i % 2 ? 1 : -1);
             g.strokeStyle = i % 2 ? "#4aa8ff" : "#a0d8ff";
             g.beginPath();
             for (let k = 0; k <= n; k++) {
@@ -1736,19 +2243,15 @@
         draw();
       };
       $("#bEch").onclick = () => {
-        if (!(a.captureStream || a.mozCaptureStream)) {
-          toast("Echo stays off so music keeps playing");
-          return;
-        }
         echo = !echo;
         $("#bEch").classList.toggle("hot", echo);
-        ensureGraph();
+        ensureGraph(true);
         if (ctx && ctx.state == "suspended") ctx.resume();
-        if (wet) wet.gain.value = echo ? 0.5 : 0;
-        else if (echo) {
+        hookEcho();
+        if (echo && !wet && !vizTap) {
           echo = false;
           $("#bEch").classList.remove("hot");
-          toast("Echo isn't available here");
+          toast("Echo needs playback started first");
           return;
         }
         toast("Echo " + (echo ? "on" : "off"));
@@ -1805,6 +2308,7 @@
       $("#fi").onchange = async (e) => {
         const fs = [...e.target.files];
         let n = 0;
+        let ord = T.filter((t) => t.folder == cwd).length;
         for (const f of fs) {
           const id = uid();
           await put("blobs", { id, blob: f });
@@ -1814,6 +2318,7 @@
             folder: cwd,
             fav: false,
             size: f.size,
+            order: ord++,
           });
           n++;
         }
@@ -1823,64 +2328,11 @@
         toast(n + " imported");
         go(1);
       };
-      $("#bNew").onclick = async () => {
-        const n = prompt("Folder name");
-        if (!n) return;
-        await put("folders", { id: uid(), name: n.trim() });
-        F = await all("folders");
-        render();
-      };
-      $("#bDel").onclick = async () => {
-        if (!sel) return toast("Select something first");
-        const f = F.find((x) => x.id == sel),
-          t = T.find((x) => x.id == sel);
-        if (
-          !confirm(
-            'Delete "' +
-              (f || t).name +
-              '"' +
-              (f ? " and everything in it" : "") +
-              "?",
-          )
-        )
-          return;
-        const ids = f
-          ? T.filter((x) => x.folder == f.id).map((x) => x.id)
-          : [sel];
-        for (const i of ids) {
-          await del("tracks", i);
-          await del("blobs", i);
-          if (i == cur) {
-            alive = false;
-            hold = true;
-            a.pause();
-            a.removeAttribute("src");
-            cur = null;
-            document.title = "DSi Sound";
-            $("#tm").textContent = "";
-          }
-        }
-        if (f) await del("folders", f.id);
-        sel = null;
-        T = await all("tracks");
-        F = await all("folders");
-        render();
-      };
-      $("#bMov").onclick = async () => {
-        const t = T.find((x) => x.id == sel);
-        if (!t) return toast("Select a song first");
-        const fs = F.slice().sort(nm),
-          n = prompt(
-            "Move to which folder?\n0 = no folder\n" +
-              fs.map((f, i) => i + 1 + " = " + f.name).join("\n"),
-          );
-        if (n === null) return;
-        const i = parseInt(n);
-        if (isNaN(i) || i < 0 || i > fs.length) return;
-        t.folder = i ? fs[i - 1].id : null;
-        await put("tracks", t);
-        render();
-      };
+      $("#bNew").onclick = () =>
+        dlgPrompt("New folder", "Folder name", "", newFolder);
+      $("#bDel").onclick = deleteSel;
+      $("#bMov").onclick = moveSel;
+      $("#bRen").onclick = renameSel;
       $("#bFav").onclick = async () => {
         const t = T.find((x) => x.id == (sel || cur));
         if (!t) return toast("Select a song first");
@@ -1928,6 +2380,7 @@
         setInterval(clk, 20000);
         await open();
         [F, T] = await Promise.all([all("folders"), all("tracks")]);
+        await normalizeOrder();
         render();
         loadFont();
         go(1);
