@@ -1,0 +1,2068 @@
+﻿<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width,initial-scale=1,viewport-fit=cover"
+    />
+    <title>DSi Sound</title>
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="icon-180.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="DSi Sound" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+    <meta name="theme-color" content="#0c0c10" />
+    <style>
+      @font-face {
+        font-family: DS;
+        src:
+          local("Nintendo DS BIOS"), url("Nintendo-DS-BIOS.ttf"),
+          url("file:///C:/Users/charl/OneDrive/Desktop/musicboxds1.0/Nintendo-DS-BIOS.ttf");
+      }
+      :root {
+        --h1: #3b63e0;
+        --h2: #1633a8;
+        --ac: #ff9a2e;
+      }
+      * {
+        box-sizing: border-box;
+        -webkit-tap-highlight-color: transparent;
+        user-select: none;
+        -webkit-user-select: none;
+      }
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+        background: #0c0c10;
+      }
+      body {
+        font-family: DS, serif;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        color: #111;
+        touch-action: manipulation;
+      }
+      #ds {
+        width: min(100vw, 520px, calc((100vh - 24px) * 0.6));
+        background: #17171c;
+        border-radius: 4cqw;
+        padding: 3%;
+        container-type: inline-size;
+      }
+      .scr {
+        position: relative;
+        aspect-ratio: 4/3;
+        container-type: inline-size;
+        background: #fff;
+        overflow: hidden;
+        border: 2px solid #000;
+        font-size: 5.4cqw;
+        display: flex;
+        flex-direction: column;
+      }
+      #hinge {
+        height: 3vmin;
+        max-height: 22px;
+        margin: 0 -3%;
+        background: linear-gradient(#2a2a30, #0b0b0e 60%, #2a2a30);
+      }
+      button {
+        font: inherit;
+        color: inherit;
+        cursor: pointer;
+      }
+      svg {
+        width: 100%;
+        height: 100%;
+        display: block;
+      }
+      #hd {
+        height: 11.5%;
+        background: linear-gradient(var(--h1), var(--h2));
+        color: #fff;
+        display: flex;
+        align-items: center;
+        gap: 2cqw;
+        padding: 0 2cqw;
+        flex: none;
+      }
+      #hd i {
+        width: 6cqw;
+        height: 5cqw;
+        display: block;
+      }
+      #tt {
+        height: 9.5%;
+        flex: none;
+        border-bottom: 1px solid #888;
+        overflow: hidden;
+        white-space: nowrap;
+        display: flex;
+        align-items: center;
+        background: #fff;
+      }
+      #tm {
+        display: inline-block;
+        animation: mq 12s linear infinite;
+      }
+      @keyframes mq {
+        to {
+          transform: translateX(-50%);
+        }
+      }
+      #main {
+        flex: 1;
+        position: relative;
+        min-height: 0;
+      }
+      #list {
+        position: absolute;
+        inset: 0;
+        overflow: auto;
+        background: #fff;
+        transition:
+          opacity 0.22s,
+          transform 0.22s;
+        touch-action: pan-y;
+        -webkit-overflow-scrolling: touch;
+      }
+      #list.dragging {
+        touch-action: none;
+        overflow: hidden;
+      }
+      #now {
+        position: absolute;
+        inset: 0;
+        display: none;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 2cqw;
+        padding: 3cqw;
+        background: linear-gradient(var(--h1), var(--h2));
+        color: #fff;
+        text-align: center;
+        font-size: 5.6cqw;
+        line-height: 1.35;
+      }
+      .play #list {
+        opacity: 0;
+        transform: translateX(-8%);
+        pointer-events: none;
+      }
+      .play #now {
+        display: flex;
+      }
+      .r {
+        display: flex;
+        align-items: center;
+        gap: 2cqw;
+        padding: 1.3cqw 2cqw;
+        border-bottom: 1px solid #ddd;
+        transition:
+          background 0.12s,
+          padding 0.12s;
+        white-space: nowrap;
+      }
+      .r.on {
+        background: #cfe0ff;
+        padding-left: 3.2cqw;
+      }
+      .r.lift {
+        background: #b8d4ff;
+        box-shadow: 0 0.6cqw 1.2cqw #0005;
+        z-index: 30;
+        position: fixed;
+        left: 0;
+        right: 0;
+        width: auto;
+        pointer-events: none;
+      }
+      .r.slot {
+        background: #e8f0ff;
+        border: 1px dashed var(--h1);
+        min-height: 7.5cqw;
+      }
+      #listBar {
+        display: none;
+        flex: none;
+        gap: 1.2cqw;
+        padding: 0.8cqw 1.5cqw;
+        background: #e8eaef;
+        border-bottom: 1px solid #888;
+        flex-wrap: wrap;
+        align-items: center;
+      }
+      #listBar.show {
+        display: flex;
+      }
+      #listBar .bn {
+        flex: 1;
+        min-width: 22%;
+        height: 8.5cqw;
+        font-size: 3.6cqw;
+      }
+      #listBar .sp {
+        flex: 100%;
+        height: 0;
+      }
+      #ovl {
+        position: fixed;
+        inset: 0;
+        z-index: 50;
+        background: #0009;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        padding: 4cqw;
+      }
+      #ovl.show {
+        display: flex;
+      }
+      .sheet {
+        width: min(92vw, 420px);
+        background: linear-gradient(#fff, #d8dbe2);
+        border: 2px solid #000;
+        border-radius: 1.6cqw;
+        padding: 2.5cqw;
+        box-shadow: 0 1cqw 0 #666;
+        font-size: 4.6cqw;
+        max-height: 85vh;
+        overflow: auto;
+      }
+      .sheet h2 {
+        margin: 0 0 1.5cqw;
+        font-size: 5.2cqw;
+        font-weight: 400;
+        color: var(--h2);
+      }
+      .sheet p {
+        margin: 0 0 2cqw;
+        line-height: 1.35;
+        font-size: 4.2cqw;
+      }
+      .sheet input {
+        width: 100%;
+        font: inherit;
+        border: 1px solid #333;
+        border-radius: 1cqw;
+        padding: 1.2cqw 1.5cqw;
+        margin-bottom: 2cqw;
+        background: #fff;
+        user-select: text;
+        -webkit-user-select: text;
+        touch-action: manipulation;
+      }
+      #sheet,
+      #sheet * {
+        user-select: text;
+        -webkit-user-select: text;
+      }
+      #sheet .bn {
+        user-select: none;
+        -webkit-user-select: none;
+      }
+      .sheet .pick {
+        display: flex;
+        flex-direction: column;
+        gap: 1cqw;
+        max-height: 40vh;
+        overflow: auto;
+        margin-bottom: 1.5cqw;
+      }
+      .sheet .pick .bn {
+        justify-content: flex-start;
+        text-align: left;
+        height: 9cqw;
+        padding: 0 2cqw;
+      }
+      .sheet .acts {
+        display: flex;
+        gap: 1.5cqw;
+      }
+      .sheet .acts .bn {
+        flex: 1;
+        height: 10cqw;
+      }
+      .r.pl {
+        color: var(--h2);
+        font-weight: bold;
+      }
+      .r svg,
+      .r i {
+        width: 5.5cqw;
+        height: 5cqw;
+        flex: none;
+      }
+      .r b {
+        margin-left: auto;
+        color: #e8a21a;
+        font-weight: 400;
+      }
+      .r span {
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .empty {
+        padding: 5cqw;
+        color: #666;
+        text-align: center;
+        line-height: 1.4;
+      }
+      #st {
+        height: 12.5%;
+        flex: none;
+        background: #101018;
+        color: #fff;
+        display: flex;
+        align-items: center;
+        gap: 2cqw;
+        padding: 0 2cqw;
+      }
+      #st .bt {
+        margin-left: 1cqw;
+        width: 7cqw;
+        height: 3.4cqw;
+        border: 1px solid #9cf;
+        position: relative;
+      }
+      #st .bt:after {
+        content: "";
+        position: absolute;
+        inset: 1px;
+        background: #6cf;
+        width: 70%;
+      }
+      #st em {
+        margin-left: auto;
+        font-style: normal;
+      }
+      #tabs {
+        height: 15%;
+        flex: none;
+        display: flex;
+        align-items: flex-end;
+        background: #cfcfd4;
+        border-bottom: 2px solid #444;
+      }
+      .tb {
+        height: 100%;
+        border: 0;
+        border-right: 1px solid #666;
+        background: linear-gradient(#f6f6f6, #b9b9bf);
+        transition: background 0.15s;
+      }
+      .tb.l,
+      .tb.r {
+        flex: 1;
+        font-size: 5.6cqw;
+      }
+      .tb.on {
+        background: linear-gradient(#fff, #e6e6ea);
+      }
+      .tb.c {
+        flex: 0 0 20%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .ring {
+        width: 7cqw;
+        height: 7cqw;
+        border: 1.5cqw solid #f0901a;
+        border-radius: 50%;
+        position: relative;
+        transition: transform 0.3s;
+      }
+      .ring:before {
+        content: "";
+        position: absolute;
+        left: 50%;
+        top: -3.2cqw;
+        width: 2cqw;
+        height: 2.4cqw;
+        margin-left: -1cqw;
+        background: #f0901a;
+        border-radius: 1px;
+      }
+      .tb.c.on .ring {
+        transform: rotate(360deg);
+      }
+      #pages {
+        flex: 1;
+        display: flex;
+        width: 300%;
+        min-height: 0;
+        transition: transform 0.32s cubic-bezier(0.2, 0.8, 0.2, 1);
+        background: repeating-linear-gradient(
+          #fff 0 5.4cqw,
+          #c9cdd4 5.4cqw 5.7cqw
+        );
+      }
+      .pg {
+        width: 33.333%;
+        padding: 2.5cqw 3cqw;
+        display: flex;
+        flex-direction: column;
+        gap: 2.2cqw;
+        min-height: 0;
+      }
+      .bn {
+        border: 1px solid #333;
+        border-radius: 1.2cqw;
+        background: linear-gradient(#fff, #d3d6dc);
+        box-shadow: 0 0.5cqw 0 #8a8f99;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 1.5cqw;
+        transition:
+          transform 0.07s,
+          box-shadow 0.07s,
+          background 0.1s,
+          color 0.1s;
+        color: #223;
+      }
+      .bn:active,
+      .bn.hot {
+        background: linear-gradient(#2d56d6, #1a3aa5);
+        color: #fff;
+        transform: translateY(0.5cqw);
+        box-shadow: none;
+      }
+      .bn svg {
+        width: 6.5cqw;
+        height: 6.5cqw;
+        flex: none;
+      }
+      .big {
+        display: flex;
+        justify-content: center;
+        gap: 5cqw;
+        padding-top: 1cqw;
+      }
+      .big .bn {
+        width: 17cqw;
+        height: 15cqw;
+      }
+      .big .bn svg {
+        width: 9cqw;
+        height: 9cqw;
+      }
+      .pbar {
+        position: relative;
+        height: 5cqw;
+        background: #222;
+        border: 1px solid #000;
+        margin-top: auto;
+        touch-action: none;
+      }
+      .pbar div,
+      .vol div {
+        height: 100%;
+        width: 0;
+        background: linear-gradient(#5b86ff, #1f45c4);
+      }
+      #pk {
+        position: absolute;
+        bottom: 100%;
+        width: 6cqw;
+        height: 6cqw;
+        margin-left: -3cqw;
+        left: 0;
+        pointer-events: none;
+      }
+      .row {
+        display: flex;
+        gap: 2cqw;
+        height: 10cqw;
+      }
+      .vol {
+        flex: 0 0 26%;
+        border: 1px solid #333;
+        background: #222;
+        position: relative;
+        touch-action: none;
+        clip-path: polygon(0 100%, 100% 0, 100% 100%);
+      }
+      .vol div {
+        background: #e9e9ee;
+      }
+      .row .bn {
+        flex: 1;
+      }
+      .row2 {
+        display: flex;
+        gap: 2cqw;
+        height: 9cqw;
+      }
+      .row2 .bn {
+        flex: 1;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 2.4cqw;
+        flex: 1;
+      }
+      .grid .bn {
+        flex-direction: column;
+        font-size: 4.6cqw;
+        line-height: 1;
+        text-align: center;
+        padding: 1cqw;
+      }
+      .note {
+        font-size: 4.4cqw;
+        line-height: 1.35;
+        background: #ffffffcc;
+        padding: 1cqw;
+      }
+      .deck {
+        position: relative;
+        gap: 1.15cqw;
+        padding: 1.5cqw 2cqw 1.6cqw;
+        justify-content: space-between;
+        overflow: hidden;
+      }
+      .deck > :not(#queue) {
+        flex: none;
+      }
+      .np {
+        background: linear-gradient(var(--h1), var(--h2));
+        color: #fff;
+        border: 1px solid #000;
+        border-radius: 1.2cqw;
+        padding: 0.9cqw 1.5cqw 1.1cqw;
+        box-shadow: inset 0 0 0 1px #ffffff55;
+      }
+      .np-top {
+        display: flex;
+        justify-content: space-between;
+        gap: 2cqw;
+        font-size: 3.3cqw;
+      }
+      .np-top span {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      #plPos {
+        flex: none;
+      }
+      .np-line {
+        display: flex;
+        align-items: center;
+        gap: 1.4cqw;
+      }
+      .np-title {
+        flex: 1;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font-size: 4.6cqw;
+      }
+      .eq {
+        display: flex;
+        align-items: flex-end;
+        gap: 0.45cqw;
+        height: 4cqw;
+        flex: none;
+      }
+      .eq i {
+        width: 1cqw;
+        height: 25%;
+        background: #fff;
+        display: block;
+        border-radius: 0.2cqw;
+      }
+      #np.playing .eq i:nth-child(1) {
+        animation: eq 0.7s ease-in-out infinite;
+      }
+      #np.playing .eq i:nth-child(2) {
+        animation: eq 0.55s ease-in-out infinite 0.1s;
+      }
+      #np.playing .eq i:nth-child(3) {
+        animation: eq 0.8s ease-in-out infinite 0.18s;
+      }
+      @keyframes eq {
+        50% {
+          height: 100%;
+        }
+      }
+      .seek {
+        display: flex;
+        align-items: center;
+        gap: 1.3cqw;
+        height: 7.2cqw;
+      }
+      .seek > span {
+        width: 8cqw;
+        flex: none;
+        font-size: 3.3cqw;
+        color: #222;
+      }
+      #du {
+        text-align: right;
+      }
+      .deck .pbar {
+        flex: 1;
+        margin-top: 0;
+        height: 3.4cqw;
+      }
+      .transport {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 3.2cqw;
+      }
+      .transport .bn {
+        width: 14cqw;
+        height: 11cqw;
+      }
+      .transport .bn svg {
+        width: 6.6cqw;
+        height: 6.6cqw;
+      }
+      #bPlay {
+        width: 16.5cqw;
+        height: 13cqw;
+        border-color: #8a4d00;
+        background: linear-gradient(#ffe3ad, #f0a030);
+        box-shadow: 0 0.5cqw 0 #a85a10;
+      }
+      #bPlay svg {
+        width: 8cqw;
+        height: 8cqw;
+      }
+      #bPlay:active {
+        background: linear-gradient(#2d56d6, #1a3aa5);
+        color: #fff;
+        box-shadow: none;
+      }
+      audio {
+        position: fixed;
+        width: 0;
+        height: 0;
+        opacity: 0;
+        pointer-events: none;
+      }
+      .modes {
+        display: flex;
+        gap: 1.4cqw;
+        height: 12.2cqw;
+      }
+      .modes .bn {
+        flex: 1;
+        flex-direction: column;
+        font-size: 3.05cqw;
+        line-height: 1;
+        gap: 0.35cqw;
+        padding: 0.5cqw;
+      }
+      .modes svg {
+        width: 5.2cqw;
+        height: 5.2cqw;
+      }
+      .dock {
+        display: flex;
+        align-items: center;
+        gap: 1.5cqw;
+        height: 8cqw;
+      }
+      .dock .bn {
+        flex: 0 0 15cqw;
+        height: 100%;
+        font-size: 3.7cqw;
+      }
+      .meter {
+        flex: 1;
+        height: 5cqw;
+        border: 1px solid #333;
+        background: #1a1a1a;
+        position: relative;
+        touch-action: none;
+        border-radius: 0.8cqw;
+        overflow: hidden;
+      }
+      #vf {
+        height: 100%;
+        width: 0;
+        background: repeating-linear-gradient(
+          90deg,
+          #6ea0ff 0 1.7cqw,
+          #2f55c8 1.7cqw 2.15cqw
+        );
+      }
+      #queue {
+        display: none;
+        position: absolute;
+        inset: 0;
+        z-index: 3;
+        flex-direction: column;
+        background: #fff;
+      }
+      #queue.show {
+        display: flex;
+      }
+      .qhead {
+        flex: none;
+        display: flex;
+        align-items: center;
+        gap: 2cqw;
+        height: 11cqw;
+        padding: 0 1.4cqw;
+        background: linear-gradient(var(--h1), var(--h2));
+        color: #fff;
+        border-bottom: 1px solid #000;
+      }
+      .qhead .bn {
+        height: 7cqw;
+        padding: 0 2cqw;
+        flex: none;
+        color: #223;
+        background: linear-gradient(#fff, #d3d6dc);
+        box-shadow: 0 0.35cqw 0 #6d7380;
+      }
+      #qTitle {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font-size: 4.4cqw;
+      }
+      #qlist {
+        flex: 1;
+        overflow: auto;
+        background: #fff;
+        font-size: 4.2cqw;
+      }
+      .qn {
+        width: 5cqw;
+        flex: none;
+        color: #667;
+        font-size: 3.5cqw;
+      }
+      .now {
+        width: 3.4cqw;
+        flex: none;
+        font-style: normal;
+        color: var(--h2);
+      }
+      #toast {
+        position: absolute;
+        left: 50%;
+        top: 40%;
+        transform: translate(-50%, 10px);
+        background: #000c;
+        color: #fff;
+        padding: 2cqw 4cqw;
+        opacity: 0;
+        transition: 0.2s;
+        pointer-events: none;
+        z-index: 9;
+        max-width: 90%;
+        text-align: center;
+      }
+      #toast.on {
+        opacity: 1;
+        transform: translate(-50%, 0);
+      }
+      @media (prefers-reduced-motion: reduce) {
+        * {
+          transition: none !important;
+          animation: none !important;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="ds">
+      <div class="scr list" id="top">
+        <div id="hd">
+          <i
+            ><svg viewBox="0 0 24 20">
+              <path d="M1 3h9l2 3h11v13H1z" fill="#fff" /></svg></i
+          ><span id="fn">music</span>
+        </div>
+        <div id="tt"><span id="tm"></span></div>
+        <div id="listBar">
+          <button type="button" class="bn" id="lbRen">Rename</button>
+          <button type="button" class="bn" id="lbDel">Delete</button>
+          <button type="button" class="bn" id="lbMov">Move</button>
+          <button type="button" class="bn" id="lbNew">New folder</button>
+        </div>
+        <div id="main">
+          <div id="list"></div>
+          <div id="now"><span id="nowTxt">Nothing playing</span></div>
+        </div>
+        <div id="st">
+          <svg viewBox="0 0 10 10" style="width: 5cqw; height: 5cqw">
+            <circle cx="5" cy="5" r="4" fill="none" stroke="#fff" />
+            <path d="M5 2v3l2 1" stroke="#fff" fill="none" /></svg
+          ><span id="clk"></span><span class="bt"></span
+          ><em id="tc">0:00:00/0:00:00</em>
+        </div>
+        <div id="toast"></div>
+      </div>
+      <div id="hinge"></div>
+      <div class="scr" id="bot">
+        <div id="tabs">
+          <button class="tb l" data-p="0">L</button
+          ><button class="tb c on" data-p="1"><span class="ring"></span></button
+          ><button class="tb r" data-p="2">R</button>
+        </div>
+        <div id="pages">
+          <div class="pg">
+            <div class="grid">
+              <button class="bn" id="bImp">Import<br />sounds</button
+              ><button class="bn" id="bNew">New<br />folder</button
+              ><button class="bn" id="bFont">Load<br />font</button>
+              <button class="bn" id="bDel">Delete</button
+              ><button class="bn" id="bMov">Move</button
+              ><button class="bn" id="bRen">Rename</button>
+              <button class="bn" id="bFav">Favourite<br />on/off</button>
+            </div>
+            <div class="note" id="info"></div>
+          </div>
+          <div class="pg deck">
+            <div class="np" id="np">
+              <div class="np-top">
+                <span id="plName">All sounds</span><span id="plPos">0</span>
+              </div>
+              <div class="np-line">
+                <div class="np-title" id="npTitle">Nothing playing</div>
+                <span class="eq" aria-hidden="true"><i></i><i></i><i></i></span>
+              </div>
+            </div>
+            <div class="seek">
+              <span id="el">0:00</span>
+              <div class="pbar" id="pb">
+                <div id="pf"></div>
+                <svg id="pk" viewBox="0 0 24 24">
+                  <ellipse cx="11" cy="14" rx="7" ry="8" fill="#2fb34a" />
+                  <circle cx="14" cy="7" r="5" fill="#3fd35c" />
+                  <path d="M17 6l5 2-4 2z" fill="#f2b21a" />
+                  <circle cx="15" cy="6" r="1.1" fill="#000" />
+                  <path d="M6 20l-3 3 6-1z" fill="#1d8a35" />
+                </svg>
+              </div>
+              <span id="du">0:00</span>
+            </div>
+            <div class="transport">
+              <button class="bn" id="bPrev" title="Previous">
+                <svg viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M5 4h3v16H5zM20 4v16L9 12z" />
+                </svg>
+              </button>
+              <button class="bn" id="bPlay" title="Play">
+                <svg id="ic" viewBox="0 0 24 24" fill="currentColor"></svg>
+              </button>
+              <button class="bn" id="bNext" title="Next">
+                <svg viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M16 4h3v16h-3zM4 4l11 8L4 20z" />
+                </svg>
+              </button>
+            </div>
+            <div class="modes">
+              <button class="bn mode" id="bShuf" title="Shuffle">
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.2"
+                >
+                  <path d="M4 7h4l3 4M4 17h4l8-10h4" />
+                  <path d="M11 17h9" />
+                  <path d="M16 4l4 3-4 3M16 14l4 3-4 3" />
+                </svg>
+                <span>Shuffle</span>
+              </button>
+              <button class="bn mode" id="bCont" title="Continue">
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.2"
+                >
+                  <path d="M16 4l4 3-4 3" />
+                  <path d="M20 7H10a5 5 0 0 0-5 5v0" />
+                  <path d="M8 20l-4-3 4-3" />
+                  <path d="M4 17h10a5 5 0 0 0 5-5v0" />
+                </svg>
+                <span>Continue</span>
+              </button>
+              <button class="bn mode" id="bRep" title="Repeat one">
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.2"
+                >
+                  <path d="M16 5l3 3-3 3" />
+                  <path d="M19 8H9a4 4 0 0 0-4 4v1" />
+                  <path d="M8 19l-3-3 3-3" />
+                  <path d="M5 16h10a4 4 0 0 0 4-4V11" />
+                </svg>
+                <span>One</span>
+              </button>
+              <button class="bn mode" id="bQueue" title="Playlist">
+                <svg viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M4 6h16v2.2H4zM4 11h16v2.2H4zM4 16h11v2.2H4z" />
+                </svg>
+                <span>View</span>
+              </button>
+            </div>
+            <div class="dock">
+              <button class="bn" id="bBack">Back</button>
+              <div class="meter" id="vl" title="Volume">
+                <div id="vf"></div>
+              </div>
+              <button class="bn" id="bFavs">Favs</button>
+            </div>
+            <div id="queue">
+              <div class="qhead">
+                <button class="bn" id="bQBack">Back</button>
+                <span id="qTitle">Playlist</span>
+              </div>
+              <div id="qlist"></div>
+            </div>
+          </div>
+          <div class="pg">
+            <div class="grid" style="grid-template-rows: 1fr 1fr">
+              <button class="bn" id="bSpd" title="Speed">
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <path
+                    d="M12 3v18M3 12h18M12 3l-3 3M12 3l3 3M12 21l-3-3M12 21l3-3M3 12l3-3M3 12l3 3M21 12l-3-3M21 12l-3 3"
+                  />
+                </svg>
+                Speed
+              </button>
+              <button class="bn" id="bThm">Colour<br />theme</button>
+              <button class="bn" id="bPers">Keep<br />storage</button>
+            </div>
+            <div class="note">
+              Add to home screen for best background playback. Shuffle builds a
+              queue you can view. Hold a list row to drag and sort.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <input
+      type="file"
+      id="fi"
+      multiple
+      accept="audio/*,.mp3,.wav,.ogg,.oga,.m4a,.flac,.aac"
+      hidden
+    />
+    <input type="file" id="ff" accept=".ttf,.otf,.woff,.woff2" hidden />
+    <div id="ovl" aria-hidden="true">
+      <div class="sheet" id="sheet"></div>
+    </div>
+    <script>
+      const $ = (s) => document.querySelector(s),
+        LS = localStorage,
+        top_ = $("#top");
+      let db,
+        F = [],
+        T = [],
+        cwd = null,
+        favV = false,
+        sel = null,
+        cur = null,
+        url = null,
+        rate = 1,
+        rep = (+LS.rep || 0) === 3 ? 1 : +LS.rep || 0,
+        shuf = LS.shuf != null ? LS.shuf === "1" : (+LS.rep || 0) === 3,
+        thm = +LS.thm || 0,
+        pg = 1,
+        vol = LS.vol ? +LS.vol : 0.8,
+        playQ = [],
+        qCtx = "",
+        playBusy = false,
+        tapLock = 0;
+      const TAP_MS = 400;
+      function tapOk() {
+        const n = performance.now();
+        if (n - tapLock < TAP_MS) return false;
+        tapLock = n;
+        return true;
+      }
+      const RATES = [1, 1.25, 1.5, 0.75];
+      const TH = [
+        ["#3b63e0", "#1633a8", "#ff9a2e"],
+        ["#f5a030", "#e06f10", "#ff5d9a"],
+        ["#e86aa8", "#b83a78", "#ffd0e6"],
+      ];
+      /* ---------- storage (IndexedDB) ---------- */
+      const open = () =>
+        new Promise((r, j) => {
+          const q = indexedDB.open("dsi-sound", 1);
+          q.onupgradeneeded = () =>
+            ["tracks", "blobs", "folders", "font"].forEach((s) =>
+              q.result.createObjectStore(s, { keyPath: "id" }),
+            );
+          q.onsuccess = () => {
+            db = q.result;
+            r();
+          };
+          q.onerror = j;
+        });
+      const st = (s, m) => db.transaction(s, m).objectStore(s);
+      const all = (s) =>
+        new Promise((r) => {
+          const q = st(s).getAll();
+          q.onsuccess = () => r(q.result);
+        });
+      const get = (s, k) =>
+        new Promise((r) => {
+          const q = st(s).get(k);
+          q.onsuccess = () => r(q.result);
+        });
+      const put = (s, v) =>
+        new Promise((r) => {
+          const t = db.transaction(s, "readwrite");
+          t.objectStore(s).put(v);
+          t.oncomplete = r;
+        });
+      const del = (s, k) =>
+        new Promise((r) => {
+          const t = db.transaction(s, "readwrite");
+          t.objectStore(s).delete(k);
+          t.oncomplete = r;
+        });
+      const uid = () =>
+        Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+      const nm = (a, b) =>
+        a.name.localeCompare(b.name, undefined, { numeric: true });
+      const byOrder = (a, b) =>
+        (a.order ?? 0) - (b.order ?? 0) || nm(a, b);
+      function shuffleIds(arr) {
+        const a = arr.slice();
+        for (let i = a.length - 1; i > 0; i--) {
+          const j = (Math.random() * (i + 1)) | 0;
+          [a[i], a[j]] = [a[j], a[i]];
+        }
+        return a;
+      }
+      function queueContextKey() {
+        if (favV) return "fav";
+        const m = T.find((t) => t.id == cur);
+        const folder = m ? m.folder : cwd;
+        return "d:" + (folder == null ? "" : folder);
+      }
+      function poolTracks() {
+        if (favV) return T.filter((t) => t.fav).sort(byOrder);
+        const m = T.find((t) => t.id == cur);
+        const folder = m ? m.folder : cwd;
+        return T.filter((t) => t.folder == folder).sort(byOrder);
+      }
+      function buildQueue(rotId) {
+        const ids = poolTracks().map((t) => t.id);
+        qCtx = queueContextKey();
+        if (!ids.length) {
+          playQ = [];
+          return;
+        }
+        if (shuf) playQ = shuffleIds(ids);
+        else playQ = ids;
+        if (rotId && shuf && playQ.includes(rotId)) {
+          const ix = playQ.indexOf(rotId);
+          playQ = playQ.slice(ix).concat(playQ.slice(0, ix));
+        }
+      }
+      function ensureQueue() {
+        const k = queueContextKey();
+        const ids = poolTracks().map((t) => t.id);
+        const stale =
+          k !== qCtx ||
+          playQ.length !== ids.length ||
+          ids.some((id) => !playQ.includes(id));
+        if (stale || !playQ.length) buildQueue();
+      }
+      async function normalizeOrder() {
+        let ch = 0;
+        const fix = async (arr, store) => {
+          arr.sort(byOrder);
+          for (let i = 0; i < arr.length; i++) {
+            if (arr[i].order !== i) {
+              arr[i].order = i;
+              await put(store, arr[i]);
+              ch++;
+            }
+          }
+        };
+        const roots = F.slice();
+        if (roots.some((f) => f.order == null)) roots.sort(nm);
+        await fix(roots, "folders");
+        for (const f of F) {
+          const kids = T.filter((t) => t.folder == f.id);
+          if (kids.some((t) => t.order == null)) kids.sort(nm);
+          await fix(kids, "tracks");
+        }
+        const rootT = T.filter((t) => !t.folder);
+        if (rootT.some((t) => t.order == null)) rootT.sort(nm);
+        await fix(rootT, "tracks");
+        return ch;
+      }
+      function ovlClose() {
+        $("#ovl").classList.remove("show");
+        $("#sheet").innerHTML = "";
+      }
+      function ovlOpen(html) {
+        $("#sheet").innerHTML = html;
+        $("#ovl").classList.add("show");
+      }
+      function dlgConfirm(title, body, onYes) {
+        ovlOpen(
+          `<h2>${esc(title)}</h2><p>${esc(body)}</p><div class="acts"><button type="button" class="bn" id="dlgNo">Cancel</button><button type="button" class="bn hot" id="dlgYes">Delete</button></div>`,
+        );
+        $("#dlgNo").onclick = ovlClose;
+        $("#dlgYes").onclick = () => {
+          ovlClose();
+          onYes();
+        };
+      }
+      function dlgPrompt(title, label, value, onOk) {
+        const sheet = $("#sheet");
+        sheet.replaceChildren();
+        const h2 = document.createElement("h2");
+        h2.textContent = title;
+        const lab = document.createElement("label");
+        lab.textContent = label;
+        const inp = document.createElement("input");
+        inp.id = "dlgIn";
+        inp.maxLength = 64;
+        inp.value = value || "";
+        const acts = document.createElement("div");
+        acts.className = "acts";
+        const no = document.createElement("button");
+        no.type = "button";
+        no.className = "bn";
+        no.id = "dlgNo";
+        no.textContent = "Cancel";
+        const yes = document.createElement("button");
+        yes.type = "button";
+        yes.className = "bn hot";
+        yes.id = "dlgOk";
+        yes.textContent = "OK";
+        acts.append(no, yes);
+        sheet.append(h2, lab, inp, acts);
+        $("#ovl").classList.add("show");
+        const ok = () => {
+          const v = inp.value.trim();
+          if (!v) return toast("Enter a name");
+          ovlClose();
+          onOk(v);
+        };
+        no.onclick = ovlClose;
+        yes.onclick = ok;
+        inp.onkeydown = (e) => {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            ok();
+          }
+        };
+        requestAnimationFrame(() => {
+          inp.focus();
+          inp.select();
+        });
+      }
+      function dlgPick(title, onPick) {
+        const fs = F.slice().sort(byOrder);
+        ovlOpen(
+          `<h2>${esc(title)}</h2><div class="pick"><button type="button" class="bn" data-id="">No folder (root)</button>${fs.map((f) => `<button type="button" class="bn" data-id="${f.id}">${esc(f.name)}</button>`).join("")}</div><div class="acts"><button type="button" class="bn" id="dlgNo">Cancel</button></div>`,
+        );
+        $("#dlgNo").onclick = ovlClose;
+        $("#sheet").querySelectorAll(".pick .bn").forEach((b) => {
+          b.onclick = () => {
+            const id = b.dataset.id || null;
+            ovlClose();
+            onPick(id);
+          };
+        });
+      }
+      /* ---------- helpers ---------- */
+      const fmt = (s) => {
+        s = Math.floor(s || 0);
+        return (
+          Math.floor(s / 3600) +
+          ":" +
+          String(Math.floor((s % 3600) / 60)).padStart(2, "0") +
+          ":" +
+          String(s % 60).padStart(2, "0")
+        );
+      };
+      let tt;
+      const toast = (m) => {
+        const t = $("#toast");
+        t.textContent = m;
+        t.classList.add("on");
+        clearTimeout(tt);
+        tt = setTimeout(() => t.classList.remove("on"), 1600);
+      };
+      const ICF =
+          '<svg viewBox="0 0 24 20"><path d="M1 3h9l2 3h11v13H1z" fill="#f2b21a" stroke="#a06a00"/></svg>',
+        ICN =
+          '<svg viewBox="0 0 24 24"><path d="M9 18V5l11-2v13" fill="none" stroke="#1633a8" stroke-width="2"/><circle cx="6.5" cy="18" r="3" fill="#1633a8"/><circle cx="17.5" cy="16" r="3" fill="#1633a8"/></svg>';
+      const PLAY = '<path d="M6 4l14 8-14 8z"/>',
+        PAUSE = '<path d="M5 4h5v16H5zM14 4h5v16h-5z"/>';
+      function theme() {
+        const t = TH[thm % TH.length];
+        const s = document.documentElement.style;
+        s.setProperty("--h1", t[0]);
+        s.setProperty("--h2", t[1]);
+        s.setProperty("--ac", t[2]);
+      }
+      /* ---------- list ---------- */
+      function items() {
+        if (favV)
+          return T.filter((t) => t.fav)
+            .sort(byOrder)
+            .map((t) => ({ k: "t", ...t }));
+        return [
+          ...(cwd
+            ? []
+            : F.slice()
+                .sort(byOrder)
+                .map((f) => ({ k: "f", ...f }))),
+          ...T.filter((t) => t.folder == cwd)
+            .sort(byOrder)
+            .map((t) => ({ k: "t", ...t })),
+        ];
+      }
+      function listBar() {
+        const bar = $("#listBar");
+        const show =
+          top_.classList.contains("list") && (sel || (!cwd && !favV));
+        bar.classList.toggle("show", !!show);
+        if (!show) return;
+        $("#lbRen").style.display = sel ? "" : "none";
+        $("#lbDel").style.display = sel ? "" : "none";
+        $("#lbMov").style.display =
+          sel && T.find((t) => t.id == sel) && !favV ? "" : "none";
+        $("#lbNew").style.display = cwd || favV ? "none" : "";
+      }
+      function render() {
+        $("#fn").textContent = favV
+          ? "favourites"
+          : cwd
+            ? F.find((f) => f.id == cwd)?.name || "music"
+            : "music";
+        const it = items(),
+          L = $("#list");
+        L.innerHTML = it.length
+          ? it
+              .map(
+                (i) =>
+                  `<div class="r${i.id == sel ? " on" : ""}${i.id == cur ? " pl" : ""}" data-id="${i.id}" data-k="${i.k}">${i.k == "f" ? ICF : ICN}<span>${esc(i.name)}</span>${i.fav ? "<b>★</b>" : ""}</div>`,
+              )
+              .join("")
+          : '<div class="empty">No sounds here yet.<br>Tap L to import or make a folder.<br>Hold a row to drag and sort.</div>';
+        $("#info").textContent = `${T.length} sounds, ${F.length} folders`;
+        est();
+        deck();
+        listBar();
+      }
+      const esc = (s) =>
+        s.replace(
+          /[&<>"]/g,
+          (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c],
+        );
+      let listDrag = 0,
+        listHold,
+        listPtr,
+        listMoved,
+        dragEl = null,
+        dragOff = 0;
+      function listTap(id, k) {
+        if (sel == id) {
+          if (k == "f") {
+            cwd = id;
+            sel = null;
+            qCtx = "";
+            render();
+          } else {
+            if (!tapOk()) return;
+            play(id);
+          }
+        } else {
+          sel = id;
+          render();
+        }
+      }
+      async function reorderList(fromId, fromK, toId, before) {
+        if (fromId == toId) return;
+        const toK = F.find((x) => x.id == toId) ? "f" : "t";
+        if (fromK != toK) return toast("Keep folders above songs");
+        let pool = favV
+          ? T.filter((t) => t.fav).sort(byOrder)
+          : fromK == "f"
+            ? F.slice().sort(byOrder)
+            : T.filter((t) => t.folder == cwd).sort(byOrder);
+        const fi = pool.findIndex((x) => x.id == fromId);
+        const ti = pool.findIndex((x) => x.id == toId);
+        if (fi < 0 || ti < 0) return;
+        const [m] = pool.splice(fi, 1);
+        let ins = ti;
+        if (fi < ti) ins--;
+        if (!before) ins++;
+        pool.splice(ins, 0, m);
+        const store = fromK == "f" ? "folders" : "tracks";
+        for (let i = 0; i < pool.length; i++) {
+          pool[i].order = i;
+          await put(store, pool[i]);
+        }
+        F = await all("folders");
+        T = await all("tracks");
+        render();
+        toast("Order saved");
+      }
+      async function deleteSel() {
+        if (!sel) return toast("Select something first");
+        const f = F.find((x) => x.id == sel),
+          t = T.find((x) => x.id == sel);
+        if (!f && !t) return;
+        const body = f
+          ? `Delete folder "${f.name}" and every song inside it?`
+          : `Delete "${t.name}"?`;
+        dlgConfirm("Delete", body, async () => {
+          const ids = f
+            ? T.filter((x) => x.folder == f.id).map((x) => x.id)
+            : [sel];
+          for (const i of ids) {
+            await del("tracks", i);
+            await del("blobs", i);
+            if (i == cur) {
+              alive = false;
+              hold = true;
+              a.pause();
+              a.removeAttribute("src");
+              cur = null;
+              document.title = "DSi Sound";
+              $("#tm").textContent = "";
+            }
+          }
+          if (f) await del("folders", f.id);
+          sel = null;
+          T = await all("tracks");
+          F = await all("folders");
+          await normalizeOrder();
+          render();
+          toast("Deleted");
+        });
+      }
+      async function renameSel() {
+        if (!sel) return toast("Select something first");
+        const f = F.find((x) => x.id == sel),
+          t = T.find((x) => x.id == sel);
+        if (!f && !t) return;
+        const id = sel;
+        dlgPrompt("Rename", "Name", (f || t).name, async (name) => {
+          const fo = F.find((x) => x.id == id);
+          const tr = T.find((x) => x.id == id);
+          try {
+            if (fo) {
+              await put("folders", { ...fo, name });
+              F = await all("folders");
+            } else if (tr) {
+              await put("tracks", { ...tr, name });
+              T = await all("tracks");
+              if (cur == id) {
+                title(name);
+                document.title = name + " · DSi Sound";
+                session({ ...tr, name });
+              }
+            } else return toast("Item missing");
+            render();
+            toast("Renamed");
+          } catch (_) {
+            toast("Could not save name");
+          }
+        });
+      }
+      async function moveSel() {
+        const t = T.find((x) => x.id == sel);
+        if (!t) return toast("Select a song first");
+        dlgPick("Move to folder", async (folder) => {
+          t.folder = folder;
+          const kids = T.filter((x) => x.folder == folder).sort(byOrder);
+          t.order = kids.length;
+          await put("tracks", t);
+          T = await all("tracks");
+          render();
+          toast("Moved");
+        });
+      }
+      async function newFolder(name) {
+        const n = name?.trim();
+        if (!n) return;
+        const order = F.length;
+        await put("folders", { id: uid(), name: n, order });
+        F = await all("folders");
+        render();
+        toast("Folder created");
+      }
+      $("#list").addEventListener(
+        "pointerdown",
+        (e) => {
+          const L = $("#list");
+          const r = e.target.closest(".r");
+          if (!r || r.classList.contains("slot") || !L.contains(r)) return;
+          listPtr = e.pointerId;
+          listDrag = 0;
+          listMoved = 0;
+          dragEl = r;
+          clearTimeout(listHold);
+          const id = r.dataset.id;
+          const sy = e.clientY;
+          const sx = e.clientX;
+          const rect0 = r.getBoundingClientRect();
+          listHold = setTimeout(() => {
+            listDrag = 1;
+            listMoved = 1;
+            L.classList.add("dragging");
+            r.classList.add("lift");
+            dragOff = sy - rect0.top;
+            const pad = L.getBoundingClientRect();
+            r.style.left = pad.left + 2 + "px";
+            r.style.width = pad.width - 4 + "px";
+            r.style.top = sy - dragOff + "px";
+            try {
+              L.setPointerCapture(listPtr);
+            } catch (_) {}
+          }, 480);
+          const onMove = (ev) => {
+            if (ev.pointerId != listPtr) return;
+            if (!listDrag) {
+              if (Math.abs(ev.clientY - sy) > 12 || Math.abs(ev.clientX - sx) > 12)
+                clearTimeout(listHold);
+              return;
+            }
+            ev.preventDefault();
+            r.style.top = ev.clientY - dragOff + "px";
+            const rows = [...$("#list").querySelectorAll(".r:not(.slot):not(.lift)")];
+            const slot = $("#list").querySelector(".r.slot");
+            let over = null;
+            for (const row of rows) {
+              if (row.dataset.id == id) continue;
+              const box = row.getBoundingClientRect();
+              if (ev.clientY < box.top + box.height / 2) {
+                over = row;
+                break;
+              }
+            }
+            if (over) {
+              if (!slot) {
+                const ph = document.createElement("div");
+                ph.className = "r slot";
+                $("#list").insertBefore(ph, over);
+              } else $("#list").insertBefore(slot, over);
+            } else if (rows.length) {
+              const last = rows[rows.length - 1];
+              if (!slot) {
+                const ph = document.createElement("div");
+                ph.className = "r slot";
+                $("#list").appendChild(ph);
+              } else last.after(slot);
+            }
+          };
+          const endDrag = (ev) => {
+            if (ev.pointerId != listPtr) return;
+            clearTimeout(listHold);
+            L.classList.remove("dragging");
+            try {
+              L.releasePointerCapture(listPtr);
+            } catch (_) {}
+            L.removeEventListener("pointermove", onMove);
+            L.removeEventListener("pointerup", endDrag);
+            L.removeEventListener("pointercancel", endDrag);
+            const slot = $("#list").querySelector(".r.slot");
+            if (listDrag) {
+              r.classList.remove("lift");
+              r.style.cssText = "";
+              let toId = null,
+                before = true;
+              if (slot?.nextElementSibling?.dataset?.id) {
+                toId = slot.nextElementSibling.dataset.id;
+                before = true;
+              } else if (slot?.previousElementSibling?.dataset?.id) {
+                toId = slot.previousElementSibling.dataset.id;
+                before = false;
+              }
+              slot?.remove();
+              if (toId) reorderList(id, r.dataset.k, toId, before);
+              listDrag = 0;
+              dragEl = null;
+              tapLock = performance.now();
+              return;
+            }
+            if (
+              !listMoved &&
+              Math.abs(ev.clientY - sy) < 16 &&
+              ev.timeStamp - e.timeStamp < 550
+            )
+              listTap(id, r.dataset.k);
+            listDrag = 0;
+            dragEl = null;
+          };
+          L.addEventListener("pointermove", onMove, { passive: false });
+          L.addEventListener("pointerup", endDrag);
+          L.addEventListener("pointercancel", endDrag);
+        },
+        { passive: true },
+      );
+      $("#lbDel").onclick = deleteSel;
+      $("#lbRen").onclick = renameSel;
+      $("#lbMov").onclick = moveSel;
+      $("#lbNew").onclick = () =>
+        dlgPrompt("New folder", "Folder name", "", newFolder);
+      async function est() {
+        try {
+          const e = await navigator.storage.estimate();
+          $("#info").textContent +=
+            `. Used ${(e.usage / 1048576).toFixed(1)} MB`;
+        } catch (_) {}
+      }
+      /* ---------- audio ---------- */
+      const a = new Audio();
+      a.preload = "auto";
+      a.volume = vol;
+      a.playsInline = true;
+      a.setAttribute("playsinline", "");
+      a.setAttribute("webkit-playsinline", "");
+      document.body.appendChild(a);
+      let alive = false,
+        hold = false,
+        bgKick = 0,
+        raf = 0,
+        posAt = 0,
+        primed = null,
+        primeToken = 0;
+      function listName() {
+        if (favV) return "Favourites";
+        const m = T.find((t) => t.id == cur);
+        const folder = m ? m.folder : cwd;
+        if (!folder) return "All sounds";
+        return F.find((f) => f.id == folder)?.name || "Folder";
+      }
+      function paintQueue() {
+        ensureQueue();
+        const q = queue();
+        $("#qTitle").textContent = shuf
+          ? listName() + " · shuffle"
+          : listName() + " · in order";
+        $("#qlist").innerHTML = q.length
+          ? q
+              .map(
+                (t, i) =>
+                  `<div class="r${t.id == cur ? " pl" : ""}${t.id == sel ? " on" : ""}" data-id="${t.id}">${t.id == cur ? '<i class="now">▶</i>' : '<i class="now"></i>'}<span class="qn">${i + 1}</span><span>${esc(t.name)}</span>${t.fav ? "<b>★</b>" : ""}</div>`,
+              )
+              .join("")
+          : '<div class="empty">This playlist is empty.<br>Import sounds from the L screen.</div>';
+      }
+      function deck() {
+        ensureQueue();
+        const q = queue();
+        const m = T.find((t) => t.id == cur);
+        const i = q.findIndex((t) => t.id == cur);
+        $("#plName").textContent = listName();
+        $("#plPos").textContent = !q.length
+          ? "0"
+          : i >= 0
+            ? i + 1 + "/" + q.length
+            : String(q.length);
+        $("#npTitle").textContent = m ? m.name : "Nothing playing";
+        $("#bShuf").classList.toggle("hot", shuf);
+        $("#bCont").classList.toggle("hot", rep == 1);
+        $("#bRep").classList.toggle("hot", rep == 2);
+        $("#bFavs").classList.toggle("hot", favV);
+        if ($("#queue").classList.contains("show")) paintQueue();
+        loopMode();
+      }
+      function loopMode() {
+        const q = queue();
+        a.loop = rep == 2 || (rep == 1 && !shuf && q.length == 1);
+      }
+      function session(meta) {
+        const ms = navigator.mediaSession;
+        if (!ms) return;
+        try {
+          if (navigator.audioSession) navigator.audioSession.type = "playback";
+        } catch (_) {}
+        if (meta) {
+          try {
+            ms.metadata = new MediaMetadata({
+              title: meta.name,
+              artist: listName(),
+              album: "DSi Sound",
+            });
+          } catch (_) {}
+        }
+        try {
+          ms.playbackState = a.paused ? "paused" : "playing";
+        } catch (_) {}
+        try {
+          if (Number.isFinite(a.duration) && a.duration > 0) {
+            ms.setPositionState({
+              duration: a.duration,
+              playbackRate: a.playbackRate || 1,
+              position: Math.min(Math.max(0, a.currentTime || 0), a.duration),
+            });
+          }
+        } catch (_) {}
+      }
+      function bindSession() {
+        const ms = navigator.mediaSession;
+        if (!ms || bindSession.done) return;
+        bindSession.done = true;
+        const set = (k, f) => {
+          try {
+            ms.setActionHandler(k, f);
+          } catch (_) {}
+        };
+        set("play", () => {
+          hold = false;
+          alive = true;
+          a.play();
+        });
+        set("pause", () => {
+          hold = true;
+          alive = false;
+          a.pause();
+        });
+        set("stop", () => {
+          hold = true;
+          alive = false;
+          a.pause();
+        });
+        set("nexttrack", () => next(1));
+        set("previoustrack", () =>
+          a.currentTime > 3 ? (a.currentTime = 0) : next(-1),
+        );
+        set("seekbackward", (d) => {
+          a.currentTime = Math.max(
+            0,
+            a.currentTime - ((d && d.seekOffset) || 10),
+          );
+        });
+        set("seekforward", (d) => {
+          const end = Number.isFinite(a.duration) ? a.duration : 1e9;
+          a.currentTime = Math.min(
+            end,
+            a.currentTime + ((d && d.seekOffset) || 10),
+          );
+        });
+        set("seekto", (d) => {
+          if (d && typeof d.seekTime == "number") a.currentTime = d.seekTime;
+        });
+      }
+      function dropPrime() {
+        if (primed && primed.url && primed.url !== url)
+          URL.revokeObjectURL(primed.url);
+        primed = null;
+      }
+      async function primeNext() {
+        const token = ++primeToken;
+        if (rep == 2 || !cur) return dropPrime();
+        ensureQueue();
+        const i = playQ.indexOf(cur);
+        if (i < 0) return;
+        let n = i + 1;
+        if (n >= playQ.length) {
+          if (rep != 1) return dropPrime();
+          n = 0;
+        }
+        const id = playQ[n];
+        if (id == cur) return dropPrime();
+        if (primed && primed.id == id) return;
+        const b = await get("blobs", id);
+        if (token != primeToken || !b) return;
+        dropPrime();
+        primed = { id, blob: b.blob, url: URL.createObjectURL(b.blob) };
+      }
+      async function play(id, keep, pre) {
+        if (playBusy) return;
+        const m = T.find((t) => t.id == id);
+        if (!m) return;
+        playBusy = true;
+        try {
+        const b = pre || (await get("blobs", id));
+        if (!b) return toast("File missing");
+        ensureQueue();
+        if (!playQ.includes(id)) buildQueue();
+        if (pre && pre.url) {
+          if (url && url !== pre.url) URL.revokeObjectURL(url);
+          url = pre.url;
+          if (primed && primed.url == pre.url) primed = null;
+        } else {
+          if (url) URL.revokeObjectURL(url);
+          url = URL.createObjectURL(b.blob);
+        }
+        a.src = url;
+        a.playbackRate = rate;
+        loopMode();
+        cur = id;
+        sel = id;
+        hold = false;
+        alive = true;
+        if (!keep) top_.className = "scr play";
+        title(m.name);
+        $("#nowTxt").textContent = m.name;
+        document.title = m.name + " · DSi Sound";
+        try {
+          await a.play();
+        } catch (_) {}
+        render();
+        session(m);
+        primeNext();
+        if ($("#queue").classList.contains("show")) paintQueue();
+        } finally {
+          playBusy = false;
+        }
+      }
+      function title(n) {
+        let u = n + "  *  ";
+        while (u.length < 44) u += u;
+        const t = $("#tm");
+        t.textContent = u + u;
+        t.style.animationDuration = Math.max(8, u.length * 0.28) + "s";
+      }
+      function queue() {
+        return playQ.map((id) => T.find((t) => t.id == id)).filter(Boolean);
+      }
+      function stopEnd() {
+        alive = false;
+        hold = true;
+        a.pause();
+        try {
+          a.currentTime = 0;
+        } catch (_) {}
+        session();
+      }
+      function next(d, auto) {
+        if (!auto && !tapOk()) return;
+        ensureQueue();
+        if (!playQ.length) return;
+        if (rep == 2 && auto) return;
+        const i = playQ.indexOf(cur);
+        if (i < 0) return;
+        let n = i + d;
+        if (n >= playQ.length) {
+          if (rep == 1 || !auto) n = 0;
+          else return stopEnd();
+        }
+        if (n < 0) n = playQ.length - 1;
+        play(playQ[n], true);
+      }
+      a.onended = () => {
+        if (primed && rep != 2) {
+          const p = primed;
+          primed = null;
+          play(p.id, true, p);
+          return;
+        }
+        next(1, true);
+      };
+      a.onplay = () => {
+        alive = true;
+        hold = false;
+        bgKick = 0;
+        $("#ic").innerHTML = PAUSE;
+        $("#np").classList.add("playing");
+        session();
+        if (!raf) loop();
+      };
+      a.onpause = () => {
+        if (document.hidden && alive && !hold && bgKick < 2) {
+          bgKick++;
+          a.play().catch(() => {});
+          return;
+        }
+        $("#ic").innerHTML = PLAY;
+        $("#np").classList.remove("playing");
+        upd();
+        session();
+      };
+      a.onseeked = a.onloadedmetadata = upd;
+      $("#bPlay").onclick = () => {
+        if (!tapOk()) return;
+        if (!a.src) {
+          ensureQueue();
+          const f =
+            T.find((t) => t.id == sel) ||
+            (playQ[0] && T.find((t) => t.id == playQ[0])) ||
+            T[0];
+          return f && play(f.id);
+        }
+        if (a.paused) {
+          hold = false;
+          alive = true;
+          a.play();
+        } else {
+          hold = true;
+          alive = false;
+          a.pause();
+        }
+      };
+      $("#bNext").onclick = () => tapOk() && next(1);
+      $("#bPrev").onclick = () => {
+        if (!tapOk()) return;
+        a.currentTime > 3 ? (a.currentTime = 0) : next(-1);
+      };
+      function clock(s) {
+        s = Math.floor(s || 0);
+        if (s >= 3600) return fmt(s);
+        return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0");
+      }
+      function upd() {
+        const d = a.duration || 0,
+          p = d ? a.currentTime / d : 0;
+        $("#pf").style.width = p * 100 + "%";
+        $("#pk").style.left = p * 100 + "%";
+        $("#tc").textContent = fmt(a.currentTime) + "/" + fmt(d);
+        $("#el").textContent = clock(a.currentTime);
+        $("#du").textContent = clock(d);
+        if (performance.now() - posAt > 1000) {
+          posAt = performance.now();
+          session();
+        }
+      }
+      /* sliders */
+      function slider(el, cb) {
+        let on = 0;
+        const f = (e) => {
+          const r = el.getBoundingClientRect();
+          cb(Math.min(1, Math.max(0, (e.clientX - r.left) / r.width)));
+        };
+        el.onpointerdown = (e) => {
+          on = 1;
+          el.setPointerCapture(e.pointerId);
+          f(e);
+        };
+        el.onpointermove = (e) => on && f(e);
+        el.onpointerup = el.onpointercancel = () => (on = 0);
+      }
+      slider($("#pb"), (p) => {
+        if (a.duration) a.currentTime = p * a.duration;
+        upd();
+      });
+      slider($("#vl"), (p) => {
+        a.volume = vol = p;
+        LS.vol = p;
+        $("#vf").style.width = p * 100 + "%";
+      });
+      /* ---------- progress loop ---------- */
+      function loop() {
+        upd();
+        if (!a.paused) raf = requestAnimationFrame(loop);
+        else raf = 0;
+      }
+      document.addEventListener("visibilitychange", () => {
+        session();
+        if (document.hidden) return;
+        if (alive && !hold && a.src && a.paused) a.play().catch(() => {});
+        if (!a.paused && !raf) loop();
+      });
+      /* ---------- buttons ---------- */
+      function go(p) {
+        pg = p;
+        $("#pages").style.transform = `translateX(${-p * 33.3333}%)`;
+        document
+          .querySelectorAll(".tb")
+          .forEach((b) => b.classList.toggle("on", +b.dataset.p == p));
+      }
+      document
+        .querySelectorAll(".tb")
+        .forEach((b) => (b.onclick = () => go(+b.dataset.p)));
+      $("#bBack").onclick = () => {
+        if (top_.classList.contains("play")) {
+          top_.className = "scr list";
+          render();
+        } else if (favV) {
+          favV = false;
+          render();
+        } else if (cwd) {
+          cwd = null;
+          qCtx = "";
+          render();
+        }
+      };
+      $("#bFavs").onclick = () => {
+        favV = !favV;
+        if (favV) cwd = null;
+        qCtx = "";
+        top_.className = "scr list";
+        $("#bFavs").classList.toggle("hot", favV);
+        render();
+      };
+      $("#bSpd").onclick = () => {
+        rate = RATES[(RATES.indexOf(rate) + 1) % 4];
+        a.playbackRate = rate;
+        session();
+        toast("Speed x" + rate);
+      };
+      const repUp = () => {
+        LS.rep = rep;
+        LS.shuf = shuf ? "1" : "0";
+        deck();
+        if (cur) primeNext();
+      };
+      $("#bShuf").onclick = () => {
+        if (!tapOk()) return;
+        shuf = !shuf;
+        buildQueue();
+        repUp();
+        if (shuf) {
+          $("#queue").classList.add("show");
+          paintQueue();
+          toast("Shuffle queue ready");
+        } else {
+          $("#queue").classList.remove("show");
+          toast("Playing in folder order");
+        }
+      };
+      $("#bCont").onclick = () => {
+        rep = rep == 1 ? 0 : 1;
+        repUp();
+        toast(rep == 1 ? "Continue on" : "Stops at the end");
+      };
+      $("#bRep").onclick = () => {
+        rep = rep == 2 ? 0 : 2;
+        repUp();
+        toast(rep == 2 ? "Repeat this song" : "Repeat off");
+      };
+      $("#bQueue").onclick = () => {
+        ensureQueue();
+        if (!playQ.length) return toast("Nothing in this list");
+        $("#queue").classList.add("show");
+        paintQueue();
+      };
+      $("#bQBack").onclick = () => $("#queue").classList.remove("show");
+      $("#qlist").onclick = (e) => {
+        const r = e.target.closest(".r");
+        if (!r || !tapOk()) return;
+        play(r.dataset.id, true);
+      };
+      $("#bThm").onclick = () => {
+        thm = (thm + 1) % TH.length;
+        LS.thm = thm;
+        theme();
+      };
+      $("#bPers").onclick = async () => {
+        try {
+          toast(
+            (await navigator.storage.persist())
+              ? "Storage protected"
+              : "Browser declined",
+          );
+        } catch (_) {
+          toast("Not supported");
+        }
+      };
+      $("#bImp").onclick = () => $("#fi").click();
+      $("#fi").onchange = async (e) => {
+        const fs = [...e.target.files];
+        let n = 0;
+        let ord = T.filter((t) => t.folder == cwd).length;
+        for (const f of fs) {
+          const id = uid();
+          await put("blobs", { id, blob: f });
+          await put("tracks", {
+            id,
+            name: f.name.replace(/\.[^.]+$/, ""),
+            folder: cwd,
+            fav: false,
+            size: f.size,
+            order: ord++,
+          });
+          n++;
+        }
+        e.target.value = "";
+        T = await all("tracks");
+        render();
+        toast(n + " imported");
+        go(1);
+      };
+      $("#bNew").onclick = () =>
+        dlgPrompt("New folder", "Folder name", "", newFolder);
+      $("#bDel").onclick = deleteSel;
+      $("#bMov").onclick = moveSel;
+      $("#bRen").onclick = renameSel;
+      $("#bFav").onclick = async () => {
+        const t = T.find((x) => x.id == (sel || cur));
+        if (!t) return toast("Select a song first");
+        t.fav = !t.fav;
+        await put("tracks", t);
+        render();
+        toast(t.fav ? "Added to favourites" : "Removed");
+      };
+      $("#bFont").onclick = () => $("#ff").click();
+      $("#ff").onchange = async (e) => {
+        const f = e.target.files[0];
+        if (!f) return;
+        await put("font", { id: "f", blob: f });
+        await loadFont();
+        toast("Font loaded");
+      };
+      async function loadFont() {
+        const r = await get("font", "f");
+        if (!r) return;
+        try {
+          const ff = new FontFace("DSu", await r.blob.arrayBuffer());
+          await ff.load();
+          document.fonts.add(ff);
+          document.body.style.fontFamily = "DSu,DS,serif";
+        } catch (_) {}
+      }
+      /* ---------- init ---------- */
+      const clk = () => {
+        const d = new Date();
+        $("#clk").textContent =
+          (d.getHours() % 12 || 12) +
+          ":" +
+          String(d.getMinutes()).padStart(2, "0");
+      };
+      (async () => {
+        theme();
+        bindSession();
+        try {
+          if (navigator.audioSession) navigator.audioSession.type = "playback";
+        } catch (_) {}
+        repUp();
+        $("#ic").innerHTML = PLAY;
+        $("#vf").style.width = vol * 100 + "%";
+        clk();
+        setInterval(clk, 20000);
+        await open();
+        [F, T] = await Promise.all([all("folders"), all("tracks")]);
+        await normalizeOrder();
+        buildQueue();
+        if (shuf) $("#queue").classList.add("show");
+        render();
+        if (shuf) paintQueue();
+        loadFont();
+        go(1);
+        try {
+          navigator.storage.persist();
+        } catch (_) {}
+      })();
+    </script>
+    <script>
+      if ("serviceWorker" in navigator)
+        window.addEventListener("load", () =>
+          navigator.serviceWorker.register("sw.js").catch(() => {}),
+        );
+    </script>
+  </body>
+</html>
